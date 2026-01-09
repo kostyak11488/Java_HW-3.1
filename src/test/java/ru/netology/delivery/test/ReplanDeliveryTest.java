@@ -27,7 +27,6 @@ public class ReplanDeliveryTest {
         Configuration.pageLoadTimeout = 15000;
         Configuration.baseUrl = "http://localhost:9999";
 
-        // Retry логика для открытия приложения
         int maxRetries = 3;
         Exception lastException = null;
 
@@ -35,11 +34,11 @@ public class ReplanDeliveryTest {
             try {
                 open("/");
                 $("[data-test-id=city]").shouldBe(visible);
-                System.out.println("✅ Application opened successfully on attempt " + (i + 1));
+                System.out.println("✅ Application opened successfully");
                 return;
             } catch (Exception e) {
                 lastException = e;
-                System.out.println("⚠️ Attempt " + (i + 1) + " failed: " + e.getMessage());
+                System.out.println("⚠️ Attempt " + (i + 1) + " failed");
 
                 if (i < maxRetries - 1) {
                     try {
@@ -51,71 +50,56 @@ public class ReplanDeliveryTest {
             }
         }
 
-        throw new RuntimeException("❌ Failed to open application after " + maxRetries + " attempts", lastException);
+        throw new RuntimeException("❌ Failed to open application", lastException);
     }
 
     @Test
     @DisplayName("Should successfully replan delivery date")
     void shouldReplanDeliveryDate() {
-        // Генерация тестовых данных
         UserInfo user = DataGenerator.generateUser();
         String firstDate = DataGenerator.generateDate(3);
         String secondDate = DataGenerator.generateDate(7);
 
-        System.out.println("\n=== Test Data ===");
-        System.out.println("City: " + user.getCity());
-        System.out.println("Name: " + user.getName());
-        System.out.println("Phone: " + user.getPhone());
-        System.out.println("First date: " + firstDate);
-        System.out.println("Second date: " + secondDate);
-        System.out.println("================\n");
-
         // Шаг 1: Заполнение формы и запланирование первую дату
-        System.out.println("📋 Step 1: Filling form with first date");
         $("[data-test-id=city] input").setValue(user.getCity());
         $("[data-test-id=name] input").setValue(user.getName());
         $("[data-test-id=phone] input").setValue(user.getPhone());
 
-        // Очистка и установка даты
-        $("[data-test-id=date] input").click();
+        // Установка даты через поле ввода
         $("[data-test-id=date] input").sendKeys(Keys.chord(Keys.CONTROL, "a"));
         $("[data-test-id=date] input").sendKeys(Keys.DELETE);
         $("[data-test-id=date] input").setValue(firstDate);
 
-        // Согласие и отправка
+        // Клик на согласие
         $("[data-test-id=agreement]").click();
+
+        // Отправка формы
         $$("button").find(exactText("Запланировать")).click();
 
         // Проверка успешного планирования
         $("[data-test-id=success-notification]")
                 .shouldBe(visible)
                 .shouldHave(text("Встреча успешно запланирована на " + firstDate));
-        System.out.println("✅ First date scheduled successfully: " + firstDate);
 
         // Шаг 2: Перепланирование на вторую дату
-        System.out.println("\n📅 Step 2: Replanning to second date");
-        $("[data-test-id=date] input").click();
         $("[data-test-id=date] input").sendKeys(Keys.chord(Keys.CONTROL, "a"));
         $("[data-test-id=date] input").sendKeys(Keys.DELETE);
         $("[data-test-id=date] input").setValue(secondDate);
+
         $$("button").find(exactText("Запланировать")).click();
 
         // Проверка уведомления о перепланировании
         $("[data-test-id=replan-notification]")
                 .shouldBe(visible)
                 .shouldHave(text("У вас уже запланирована встреча на другую дату"));
-        System.out.println("✅ Replan notification appeared");
 
         // Шаг 3: Подтверждение перепланирования
-        System.out.println("\n✔️ Step 3: Confirming replan");
         $$("button").find(exactText("Перепланировать")).click();
 
         // Проверка успешного перепланирования
         $("[data-test-id=success-notification]")
                 .shouldBe(visible)
                 .shouldHave(text("Встреча успешно запланирована на " + secondDate));
-        System.out.println("✅ Successfully replanned to: " + secondDate);
-        System.out.println("\n🎉 Test completed successfully!\n");
     }
 
     @AfterEach
