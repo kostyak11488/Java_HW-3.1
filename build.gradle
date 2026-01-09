@@ -24,4 +24,8 @@ dependencies {
 
 test {
     useJUnitPlatform()
+
+    // Запуск Selenide в headless режиме
+    systemProperty "selenide.headless", "true"
 }
+
