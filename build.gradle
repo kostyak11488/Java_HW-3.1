@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'io.freefair.lombok' version '8.6'
+    id 'io.qameta.allure' version '2.11.2'
 }
 
 group = 'ru.netology'
@@ -20,15 +21,22 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testImplementation 'com.codeborne:selenide:6.19.1'
     testImplementation 'com.github.javafaker:javafaker:1.0.2'
-    // Убрать webdrivermanager, так как Selenide управляет драйвером сам
-    // testImplementation 'io.github.bonigarcia:webdrivermanager:5.5.3'
+    testImplementation 'io.qameta.allure:allure-selenide:2.24.0'
 }
 
 test {
     useJUnitPlatform()
-    systemProperty "selenide.headless", "true"
-    systemProperty "selenide.browser", "chrome"
-    // Добавить для лучшей стабильности
-    systemProperty "selenide.pageLoadStrategy", "eager"
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+        showExceptions true
+        exceptionFormat "full"
+        showCauses true
+        showStackTraces true
+    }
+    systemProperties = [
+            'selenide.headless': 'true',
+            'selenide.browser': 'chrome',
+            'selenide.timeout': '15000',
+            'selenide.pageLoadTimeout': '15000'
+    ]
 }
-
