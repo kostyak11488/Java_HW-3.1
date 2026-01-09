@@ -23,15 +23,27 @@ jobs:
     - name: Grant execute permission for Gradlew
       run: chmod +x gradlew
 
+    - name: Install Chrome
+      run: sudo apt-get update && sudo apt-get install -y google-chrome-stable
+
+    - name: Install ChromeDriver
+      uses: nanasess/setup-chromedriver@v1
+      with:
+        chromedriver-version: 'latest'
+
     - name: Build project
       run: ./gradlew clean build
 
     - name: Run application in background
       run: nohup java -jar artifacts/app-replan-delivery.jar &
 
+    - name: Wait for app to start
+      run: sleep 10
+
     - name: Run tests
-      run: ./gradlew test
+      run: ./gradlew test -Dselenide.headless=true
 
     - name: Stop application
       run: pkill -f 'artifacts/app-replan-delivery.jar'
+
 
