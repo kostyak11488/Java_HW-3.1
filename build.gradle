@@ -20,11 +20,15 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testImplementation 'com.codeborne:selenide:6.19.1'
     testImplementation 'com.github.javafaker:javafaker:1.0.2'
-    testImplementation 'io.github.bonigarcia:webdrivermanager:5.5.3' // <-- WebDriverManager
+    // Убрать webdrivermanager, так как Selenide управляет драйвером сам
+    // testImplementation 'io.github.bonigarcia:webdrivermanager:5.5.3'
 }
 
 test {
     useJUnitPlatform()
     systemProperty "selenide.headless", "true"
+    systemProperty "selenide.browser", "chrome"
+    // Добавить для лучшей стабильности
+    systemProperty "selenide.pageLoadStrategy", "eager"
 }
 

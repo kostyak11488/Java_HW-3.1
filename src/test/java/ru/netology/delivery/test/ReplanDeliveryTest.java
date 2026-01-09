@@ -1,9 +1,9 @@
 package ru.netology.delivery.test;
 
 import com.codeborne.selenide.Configuration;
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.Keys;
 import ru.netology.delivery.data.DataGenerator;
 import ru.netology.delivery.data.UserInfo;
 
@@ -14,9 +14,12 @@ public class ReplanDeliveryTest {
 
     @BeforeEach
     void setUp() {
-        WebDriverManager.chromedriver().setup();
+        // Убрать WebDriverManager - Selenide управляет драйвером сам
         Configuration.browser = "chrome";
-        Configuration.headless = true;  
+        Configuration.headless = true;
+        Configuration.browserSize = "1920x1080";
+        Configuration.timeout = 10000;
+
         open("http://localhost:9999");
     }
 
@@ -29,14 +32,20 @@ public class ReplanDeliveryTest {
         $("[data-test-id=city] input").setValue(user.getCity());
         $("[data-test-id=name] input").setValue(user.getName());
         $("[data-test-id=phone] input").setValue(user.getPhone());
-        $("[data-test-id=date] input").doubleClick().sendKeys(firstDate);
+
+        // Более надежный способ очистки поля даты
+        $("[data-test-id=date] input").sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.DELETE);
+        $("[data-test-id=date] input").setValue(firstDate);
+
         $("[data-test-id=agreement]").click();
         $$("button").find(text("Запланировать")).click();
 
         $("[data-test-id=success-notification]")
                 .shouldHave(text("Встреча успешно запланирована на " + firstDate));
 
-        $("[data-test-id=date] input").doubleClick().sendKeys(secondDate);
+        // Для перепланирования
+        $("[data-test-id=date] input").sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.DELETE);
+        $("[data-test-id=date] input").setValue(secondDate);
         $$("button").find(text("Запланировать")).click();
 
         $("[data-test-id=replan-notification]")
@@ -48,5 +57,4 @@ public class ReplanDeliveryTest {
                 .shouldHave(text("Встреча успешно запланирована на " + secondDate));
     }
 }
-
 
