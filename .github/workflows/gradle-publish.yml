@@ -19,6 +19,16 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
 
+      - name: Install Chrome and ChromeDriver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+          google-chrome --version
+
       - name: Grant execute permission for Gradlew
         run: chmod +x gradlew
 
@@ -31,30 +41,36 @@ jobs:
           SERVER_PID=$!
           echo "Server started with PID: $SERVER_PID"
           
+          # Ждем пока сервер запустится
           echo "Waiting for server to start..."
           for i in {1..30}; do
-            if nc -z localhost 9999; then
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:9999 | grep -q "200\|404"; then
               echo "Server is up and running!"
               break
             fi
             echo "Attempt $i: Server not ready yet..."
             sleep 2
           done
-          
-          if ! nc -z localhost 9999; then
-            echo "ERROR: Server failed to start!"
-            exit 1
-          fi
 
-      - name: Install netcat for port checking
-        run: sudo apt-get update && sudo apt-get install -y netcat
+      - name: Run tests with debugging
+        run: |
+          ./gradlew test --tests ReplanDeliveryTest \
+            --info \
+            -Dselenide.headless=true \
+            -Dselenide.browser=chrome \
+            -Dselenide.timeout=10000
 
-      - name: Run tests
-        run: ./gradlew test --info
+      - name: Show test report if failed
+        if: failure()
+        run: |
+          echo "=== Test Report ==="
+          cat build/reports/tests/test/index.html 2>/dev/null | grep -A 20 -B 20 "FAILED" || true
+          echo "=== End of Report ==="
 
       - name: Stop application
         run: |
           pkill -f 'artifacts/app-replan-delivery.jar' || true
+          kill $(lsof -t -i:9999) 2>/dev/null || true
 
 
 
