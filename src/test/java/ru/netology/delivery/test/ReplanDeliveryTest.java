@@ -1,6 +1,7 @@
 package ru.netology.delivery.test;
 
 import com.codeborne.selenide.Configuration;
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.netology.delivery.data.DataGenerator;
@@ -13,7 +14,9 @@ public class ReplanDeliveryTest {
 
     @BeforeEach
     void setUp() {
-        Configuration.holdBrowserOpen = true;
+        WebDriverManager.chromedriver().setup();
+        Configuration.browser = "chrome";
+        Configuration.headless = true;  
         open("http://localhost:9999");
     }
 
@@ -45,4 +48,5 @@ public class ReplanDeliveryTest {
                 .shouldHave(text("Встреча успешно запланирована на " + secondDate));
     }
 }
+
 

@@ -20,12 +20,11 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testImplementation 'com.codeborne:selenide:6.19.1'
     testImplementation 'com.github.javafaker:javafaker:1.0.2'
+    testImplementation 'io.github.bonigarcia:webdrivermanager:5.5.3' // <-- WebDriverManager
 }
 
 test {
     useJUnitPlatform()
-
-    // Запуск Selenide в headless режиме
     systemProperty "selenide.headless", "true"
 }
 
