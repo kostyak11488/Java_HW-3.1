@@ -7,8 +7,15 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
+    services:
+      selenium:
+        image: selenoid/vnc:chrome_117.0
+        options: >-
+          --shm-size 2g
+        ports:
+          - 4444:4444
 
     steps:
     - uses: actions/checkout@v3
@@ -22,12 +29,6 @@ jobs:
     - name: Grant execute permission for Gradlew
       run: chmod +x gradlew
 
-    - name: Setup Chrome and ChromeDriver
-      uses: actions/setup-chrome@v4
-      with:
-        chrome-version: '117'  # стабильная версия
-        chromedriver-version: '117.0.5938.92'  # совместимая версия
-
     - name: Build project
       run: ./gradlew clean build
 
@@ -35,6 +36,8 @@ jobs:
       run: nohup java -jar artifacts/app-replan-delivery.jar &
 
     - name: Run tests
+      env:
+        SELENIUM_REMOTE_URL: http://localhost:4444/wd/hub
       run: ./gradlew test -Dselenide.headless=true
 
     - name: Stop application
