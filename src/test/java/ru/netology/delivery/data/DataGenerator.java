@@ -1,14 +1,12 @@
 package ru.netology.delivery.data;
 
-import com.github.javafaker.Faker;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import java.util.Random;
 
 public class DataGenerator {
 
-    private static final Faker faker = new Faker(new Locale("ru"));
+    private static final Random random = new Random();
 
     private DataGenerator() {
     }
@@ -16,31 +14,28 @@ public class DataGenerator {
     public static UserInfo generateUser() {
         return new UserInfo(
                 generateCity(),
-                generateName(),
-                generatePhone()
+                "Иванов Иван",
+                "+79990000000"
         );
     }
 
     public static String generateDate(int days) {
-        return LocalDate.now().plusDays(days)
+        return LocalDate.now()
+                .plusDays(days)
                 .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
     }
 
     private static String generateCity() {
         String[] cities = {
-                "Москва", "Санкт-Петербург", "Казань",
-                "Екатеринбург", "Новосибирск", "Самара",
-                "Уфа", "Краснодар", "Пермь", "Воронеж"
+                "Москва",
+                "Санкт-Петербург",
+                "Казань",
+                "Екатеринбург",
+                "Новосибирск",
+                "Самара"
         };
-        return cities[faker.random().nextInt(cities.length)];
-    }
-
-    private static String generateName() {
-        return faker.name().firstName() + " " + faker.name().lastName();
-    }
-
-    private static String generatePhone() {
-        return "+7" + faker.numerify("##########");
+        return cities[random.nextInt(cities.length)];
     }
 }
+
 
