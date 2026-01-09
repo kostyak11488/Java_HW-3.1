@@ -9,12 +9,6 @@ environment:
 install:
   - sudo apt-get update
   - sudo apt-get install -y openjdk-11-jdk wget unzip curl
-  - wget https://services.gradle.org/distributions/gradle-8.8-bin.zip
-  - sudo mkdir /opt/gradle
-  - sudo unzip gradle-8.8-bin.zip -d /opt/gradle
-  - export PATH=$PATH:/opt/gradle/gradle-8.8/bin
-  - java -version
-  - gradle -version
 
 build_script:
   - chmod +x gradlew
@@ -37,7 +31,9 @@ test_script:
   - java -jar artifacts/app-replan-delivery.jar > app.log 2>&1 &
   - echo $! > app.pid
   - sleep 10
-  - curl -f http://localhost:9999 || (cat app.log && exit 1)
+
+  - echo "Checking if server is running..."
+  - curl -f http://localhost:9999 || (echo "❌ Server not responding!" && cat app.log && exit 1)
 
   - echo "Running tests..."
   - ./gradlew test --tests ReplanDeliveryTest \
@@ -47,7 +43,7 @@ test_script:
     -Dselenide.pageLoadTimeout=15000
 
 after_test:
-  - echo "Test completed"
+  - echo "=== Test completed ==="
 
 artifacts:
   - path: build/reports/tests/test/
@@ -56,9 +52,8 @@ artifacts:
     name: AppLog
 
 on_finish:
-  - ps: |
-      if (Test-Path app.pid) {
-        $pid = Get-Content app.pid
-        Stop-Process -Id $pid -Force 2>$null || true
-      }
-      Stop-Process -Name java -Force 2>$null || true
+  - bash: |
+      if [ -f app.pid ]; then
+        kill $(cat app.pid) 2>/dev/null || true
+      fi
+      kill $(lsof -t -i:9999) 2>/dev/null || true
