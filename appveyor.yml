@@ -15,6 +15,11 @@ build_script:
   - ./gradlew clean build
 
 test_script:
+  - echo "=== System info ==="
+  - java -version
+  - ls -la artifacts/
+  - file artifacts/app-replan-delivery.jar || echo "JAR not found or not executable"
+
   - echo "Installing Chrome..."
   - wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
   - echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
@@ -32,8 +37,19 @@ test_script:
   - echo $! > app.pid
   - sleep 10
 
-  - echo "Checking if server is running..."
-  - curl -f http://localhost:9999 || (echo "❌ Server not responding!" && cat app.log && exit 1)
+  - echo "=== Server status ==="
+  - ps aux | grep java
+  - netstat -tuln | grep 9999 || echo "Port 9999 not listening"
+  - curl -v http://localhost:9999 2>&1 | head -20
+
+  - if curl -f http://localhost:9999; then
+    echo "✅ Server is UP"
+    else
+    echo "❌ Server is DOWN"
+    echo "=== App Log ==="
+    cat app.log || echo "No log"
+    exit 1
+    fi
 
   - echo "Running tests..."
   - ./gradlew test --tests ReplanDeliveryTest \
@@ -50,6 +66,8 @@ artifacts:
     name: TestResults
   - path: app.log
     name: AppLog
+  - path: app.pid
+    name: AppPid
 
 on_finish:
   - bash: |
