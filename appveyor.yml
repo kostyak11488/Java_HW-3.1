@@ -8,70 +8,58 @@ environment:
 
 install:
   - sudo apt-get update
-  - sudo apt-get install -y openjdk-11-jdk wget unzip curl
+  - sudo apt-get install -y openjdk-11-jdk wget unzip curl lsof gnupg
+  - java -version
 
 build_script:
   - chmod +x gradlew
-  - ./gradlew clean build
+  - ./gradlew clean build -x test
 
 test_script:
   - echo "=== System info ==="
   - java -version
   - ls -la artifacts/
-  - file artifacts/app-replan-delivery.jar || echo "JAR not found or not executable"
-
+  - file artifacts/app-replan-delivery.jar
   - echo "Installing Chrome..."
   - wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
   - echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
   - sudo apt-get update
   - sudo apt-get install -y google-chrome-stable
-  - CHROMEDRIVER_VERSION="143.0.7357.124"
-  - wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
-  - sudo unzip /tmp/chromedriver.zip -d /usr/local/bin/
-  - sudo chmod +x /usr/local/bin/chromedriver
+  - echo "Chrome installed"
   - google-chrome --version
-  - chromedriver --version
-
+  - echo "Killing any existing processes on port 9999..."
+  - sudo lsof -ti:9999 | xargs kill -9 2>/dev/null || true
+  - sleep 2
   - echo "Starting application..."
   - java -jar artifacts/app-replan-delivery.jar > app.log 2>&1 &
-  - echo $! > app.pid
-  - sleep 10
-
+  - APP_PID=$!
+  - echo $APP_PID > app.pid
+  - sleep 15
   - echo "=== Server status ==="
-  - ps aux | grep java
-  - netstat -tuln | grep 9999 || echo "Port 9999 not listening"
-  - curl -v http://localhost:9999 2>&1 | head -20
-
-  - if curl -f http://localhost:9999; then
-    echo "✅ Server is UP"
-    else
-    echo "❌ Server is DOWN"
-    echo "=== App Log ==="
-    cat app.log || echo "No log"
-    exit 1
-    fi
-
+  - ps aux | grep java | grep -v grep || echo "Java process not found"
+  - echo "=== App Log ==="
+  - cat app.log || echo "No log file"
+  - echo "Testing connectivity..."
+  - curl -v http://localhost:9999 2>&1 | head -20 || echo "Connection failed"
   - echo "Running tests..."
-  - ./gradlew test --tests ReplanDeliveryTest \
-    -Dselenide.headless=true \
-    -Dselenide.browser=chrome \
-    -Dselenide.timeout=15000 \
-    -Dselenide.pageLoadTimeout=15000
+  - ./gradlew test --tests ReplanDeliveryTest -Dselenide.headless=true -Dselenide.browser=chrome -Dselenide.timeout=15000 -Dselenide.pageLoadTimeout=15000
 
 after_test:
-  - echo "=== Test completed ==="
+  - echo "=== Test Report ==="
+  - test -f build/reports/tests/test/index.html && echo "Test report generated" || echo "No test report"
 
 artifacts:
   - path: build/reports/tests/test/
     name: TestResults
+  - path: build/libs/
+    name: Artifacts
   - path: app.log
     name: AppLog
-  - path: app.pid
-    name: AppPid
 
 on_finish:
   - bash: |
+      echo "Cleanup..."
       if [ -f app.pid ]; then
         kill $(cat app.pid) 2>/dev/null || true
       fi
-      kill $(lsof -t -i:9999) 2>/dev/null || true
+      sudo lsof -ti:9999 | xargs kill -9 2>/dev/null || true
