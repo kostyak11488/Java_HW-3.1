@@ -25,14 +25,36 @@ jobs:
       - name: Build project
         run: ./gradlew clean build
 
-      - name: Run application in background
-        run: nohup java -jar artifacts/app-replan-delivery.jar &
+      - name: Start application
+        run: |
+          java -jar artifacts/app-replan-delivery.jar &
+          SERVER_PID=$!
+          echo "Server started with PID: $SERVER_PID"
+          
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if nc -z localhost 9999; then
+              echo "Server is up and running!"
+              break
+            fi
+            echo "Attempt $i: Server not ready yet..."
+            sleep 2
+          done
+          
+          if ! nc -z localhost 9999; then
+            echo "ERROR: Server failed to start!"
+            exit 1
+          fi
+
+      - name: Install netcat for port checking
+        run: sudo apt-get update && sudo apt-get install -y netcat
 
       - name: Run tests
-        run: ./gradlew test
+        run: ./gradlew test --info
 
       - name: Stop application
-        run: pkill -f 'artifacts/app-replan-delivery.jar'
+        run: |
+          pkill -f 'artifacts/app-replan-delivery.jar' || true
 
 
 
