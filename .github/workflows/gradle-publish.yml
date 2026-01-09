@@ -7,15 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
-    services:
-      selenium:
-        image: selenoid/vnc:chrome_117.0
-        options: >-
-          --shm-size 2g
-        ports:
-          - 4444:4444
 
     steps:
     - uses: actions/checkout@v3
@@ -36,11 +29,10 @@ jobs:
       run: nohup java -jar artifacts/app-replan-delivery.jar &
 
     - name: Run tests
-      env:
-        SELENIUM_REMOTE_URL: http://localhost:4444/wd/hub
-      run: ./gradlew test -Dselenide.headless=true
+      run: ./gradlew test
 
     - name: Stop application
       run: pkill -f 'artifacts/app-replan-delivery.jar'
+
 
 
